@@ -15,6 +15,7 @@ The Pixel 1 without a battery reads garbage values from the battery thermistor (
 | Force level 99% | `htc_battery.c` | Battery level always reports 99% |
 | Raise thermal limits | `msm8996-htc_sailfish.dtsi` | Warm/hot thresholds raised to 90°C, cold to -40°C |
 | Watchdog auto-reboot | `defconfig` | `CONFIG_PANIC_TIMEOUT=5` — auto-reboot on kernel panic |
+| Charger mode bypass | `init/main.c` | Forces `androidboot.mode=main` — prevents USB charger bootloop |
 
 ### Before vs After
 
@@ -24,6 +25,7 @@ The Pixel 1 without a battery reads garbage values from the battery thermistor (
 | Health | Overheat | **Good** |
 | Capacity | Fluctuating | **99%** |
 | Thermal shutdown | Yes, within minutes | **Never** |
+| USB boot | Charger mode bootloop | **Normal boot** |
 
 ## Build
 

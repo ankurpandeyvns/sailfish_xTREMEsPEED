@@ -227,6 +227,47 @@ PYEOF
 fi
 
 # ============================================================
+# STEP 2b: Charger mode bypass (independent of battery patches)
+# ============================================================
+if grep -q "xtremespeed_force_normal_boot" init/main.c 2>/dev/null; then
+    warn "Charger mode bypass already applied — skipping"
+else
+    log "[6/6] Patching init/main.c — disable charger mode bootloop"
+    python3 << 'PYEOF'
+filepath = "init/main.c"
+with open(filepath, "r") as f:
+    content = f.read()
+
+# Append charger mode override function at end of init/main.c
+# This modifies saved_command_line (exposed via /proc/cmdline) to replace
+# androidboot.mode=charger with androidboot.mode=main before userspace init reads it.
+# Without a battery, charger mode is useless and causes an infinite bootloop.
+override_code = """
+/* xTREMEsPEED: Force normal boot mode — battery-less device has no use
+ * for charger mode, which causes bootloop when powered via USB.
+ * Replaces "androidboot.mode=charger" with "androidboot.mode=main   "
+ * in /proc/cmdline before Android init reads it. */
+static int __init xtremespeed_force_normal_boot(void)
+{
+\tchar *p;
+\tp = strstr(saved_command_line, "androidboot.mode=charger");
+\tif (p) {
+\t\tmemcpy(p + 18, "main   ", 7);
+\t\tpr_info("xTREMEsPEED: Forced androidboot.mode=main (charger mode disabled)\\n");
+\t}
+\treturn 0;
+}
+early_initcall(xtremespeed_force_normal_boot);
+"""
+
+content += override_code
+with open(filepath, "w") as f:
+    f.write(content)
+print(f"  Patched {filepath}: charger mode override added (early_initcall)")
+PYEOF
+fi
+
+# ============================================================
 # STEP 3: Configure and build
 # ============================================================
 log "Setting up build config..."
